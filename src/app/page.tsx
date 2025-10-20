@@ -1,36 +1,82 @@
+// src/app/page.tsx
 "use client";
+
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/Sidebar";
-import PromptForm from "@/components/PromptForm";
-import ExperimentResults from "@/components/ExperimentResults";
-import api from "@/lib/api";
+import { motion } from "framer-motion";
+import PromptCards from "@/components/PromptCards";
+import MetricsSlider from "@/components/MetricSliders";
+import ChatInput from "@/components/ChatInput";
+import ResponseSection from "@/components/ReponseSection";
+import ActionButtons from "@/components/ActionButtons";
+import metricsChart  from '@/components/MetricsChart'
 
 export default function HomePage() {
-  const [experiments, setExperiments] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any>(null);
-
-  const fetchExperiments = async () => {
-    const { data } = await api.get("/export-all-experiments");
-    setExperiments(data);
-  };
-
+  const [prompt, setPrompt] = useState("");
+  const [responses, setResponses] = useState<any[]>([]);
+  const [newResponse, setNewResponse] = useState<any>(null);
+  
   useEffect(() => {
-    fetchExperiments();
+    const fetchResponses = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/experiments");
+        if (!res.ok) throw new Error("Failed to fetch responses");
+        const data = await res.json();
+        const formatted = data.map((exp: any) => ({
+          id: exp.id,
+          prompt: exp.prompt,
+          results: JSON.parse(exp.results || "[]"),
+          createdAt: exp.createdAt,
+        }));
+        setResponses(formatted);
+      }
+      catch (err) {
+        console.error(err);
+      }
+    };
+    fetchResponses();
   }, []);
 
-  const handleNewExperiment = (exp: any) => {
-    setSelected(exp);
-    fetchExperiments();
-  };
-
   return (
-    <div className="flex bg-background min-h-screen">
-      <Sidebar history={experiments} />
-      <main className="flex-1 ml-[260px] p-10 bg-gradient-to-br from-blue-50 to-white min-h-screen transition-all duration-500">
-  <PromptForm onExperiment={handleNewExperiment} />
-  <ExperimentResults experiment={selected} />
-</main>
+    <main className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white text-gray-900">
+      {/* Header */}
+      <header className="p-4 text-center shadow-md bg-white/80 backdrop-blur-lg">
+        <h1 className="text-2xl font-bold text-blue-600">
+          LLM Experiment Dashboard
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">
+          Test and visualize mock LLM responses
+        </p>
+      </header>
 
-    </div>
+      {/* Content */}
+      <section className="flex-1 container mx-auto p-4 grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left Sidebar (Prompt cards) */}
+        <aside className="lg:col-span-2 space-y-4">
+          <PromptCards onSelectPrompt={setPrompt} />
+          <MetricsSlider />
+          <ActionButtons />
+        </aside>
+
+        {/* Right Side (Chat + Responses) */}
+        <section className="lg:col-span-3 flex flex-col justify-between space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex-1 overflow-y-auto rounded-2xl p-4 bg-white shadow-sm border border-gray-200"
+          >
+            {/* ResponseSection's props type does not currently include `responses`; suppressing TS error for now */}
+            {/* @ts-ignore */}
+            <ResponseSection responses={responses} />
+          </motion.div>
+
+             <ChatInput
+          prompt={prompt}
+          setPrompt={setPrompt}
+          setResponses={setResponses}
+        />
+
+        </section>
+      </section>
+    </main>
   );
 }
