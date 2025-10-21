@@ -2,7 +2,6 @@
 "use client";
 
 import { Download, BarChart } from "lucide-react";
-import metricsChart  from './MetricsChart'
 
 
 export default function ActionButtons() {

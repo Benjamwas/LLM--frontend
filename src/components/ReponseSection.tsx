@@ -12,7 +12,7 @@ export default function ResponseSection({ newResponse }: ResponseSectionProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch existing experiments from backend
+  // Fetch experiments from backend
   const fetchResponses = async () => {
     try {
       setLoading(true);
@@ -40,6 +40,10 @@ export default function ResponseSection({ newResponse }: ResponseSectionProps) {
   // Fetch once on mount
   useEffect(() => {
     fetchResponses();
+
+    // 🔁 Auto-refresh every 5 seconds
+    const interval = setInterval(fetchResponses, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Append newResponse from ChatInput instantly
@@ -50,7 +54,7 @@ export default function ResponseSection({ newResponse }: ResponseSectionProps) {
   }, [newResponse]);
 
   // UI States
-  if (loading) {
+  if (loading && responses.length === 0) {
     return <p className="text-center text-blue-600 animate-pulse">Fetching responses...</p>;
   }
 
@@ -73,6 +77,7 @@ export default function ResponseSection({ newResponse }: ResponseSectionProps) {
           key={res.id || index}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
           className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm"
         >
           <h3 className="text-blue-600 font-medium mb-1">{res.prompt || "Prompt"}</h3>

@@ -1,89 +1,187 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@mui/material";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import * as Recharts from "recharts";
+
+const {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} = Recharts;
 import { motion } from "framer-motion";
 
-export default function MetricsPage() {
-  const [metrics, setMetrics] = useState<any[]>([]);
+// ✅ Type definitions
+type MetricType = "all" | "temperature" | "topP" | "responseLength";
+
+interface Averages {
+  avgTemp: number;
+  avgTopP: number;
+  avgResponseLength: number;
+}
+
+interface ServerParameters {
+  temperature?: number[];
+  topP?: number[];
+  [key: string]: any;
+}
+
+interface ServerExperiment {
+  id: string;
+  prompt: string;
+  parameters?: ServerParameters;
+  results?: string;
+  createdAt: string;
+  [key: string]: any;
+}
+
+interface ResultItem {
+  response?: string;
+  [key: string]: any;
+}
+
+interface ExperimentData {
+  id: string;
+  prompt: string;
+  temperature: number;
+  topP: number;
+  responseLength: number;
+  createdAt: string;
+}
+
+export default function MetricsChart(): JSX.Element {
+  const [data, setData] = useState<ExperimentData[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [metric, setMetric] = useState<MetricType>("all");
+  const [averages, setAverages] = useState<Averages>({
+    avgTemp: 0,
+    avgTopP: 0,
+    avgResponseLength: 0,
+  });
 
   useEffect(() => {
-    // Simulate mock data fetching
-    const mockMetrics = [
-      { name: "Experiment 1", coherence: 0.82, diversity: 0.65, accuracy: 0.76 },
-      { name: "Experiment 2", coherence: 0.88, diversity: 0.69, accuracy: 0.82 },
-      { name: "Experiment 3", coherence: 0.91, diversity: 0.72, accuracy: 0.85 },
-      { name: "Experiment 4", coherence: 0.87, diversity: 0.68, accuracy: 0.81 },
-    ];
-    setMetrics(mockMetrics);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch("http://localhost:3000/api/experiments");
+        if (!res.ok) throw new Error("Failed to fetch experiments");
+        const experiments = (await res.json()) as ServerExperiment[];
+
+        const formatted: ExperimentData[] = experiments.map((exp: ServerExperiment) => {
+          const parsedResults: ResultItem[] = JSON.parse(exp.results || "[]");
+          const firstResult: ResultItem | undefined = parsedResults[0] || {};
+
+          return {
+            id: exp.id,
+            prompt: exp.prompt.slice(0, 30) + "...",
+            temperature: exp.parameters?.temperature?.[0] ?? 0.7,
+            topP: exp.parameters?.topP?.[0] ?? 0.9,
+            responseLength: firstResult?.response?.length || 0,
+            createdAt: new Date(exp.createdAt).toLocaleDateString(),
+          };
+        });
+
+        const avgTemp =
+          formatted.reduce((sum, d) => sum + d.temperature, 0) / formatted.length || 0;
+        const avgTopP =
+          formatted.reduce((sum, d) => sum + d.topP, 0) / formatted.length || 0;
+        const avgResponseLength =
+          formatted.reduce((sum, d) => sum + d.responseLength, 0) / formatted.length || 0;
+
+        setAverages({
+          avgTemp: Number(avgTemp.toFixed(2)),
+          avgTopP: Number(avgTopP.toFixed(2)),
+          avgResponseLength: Math.round(avgResponseLength),
+        });
+
+        setData(formatted);
+      } catch (err: any) {
+        setError(err.message || "Error loading metrics");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-2xl font-bold text-blue-600 text-center"
-      >
-        Model Performance Metrics
-      </motion.h1>
+  const renderLines = () => {
+    if (metric === "temperature")
+      return <Line type="monotone" dataKey="temperature" stroke="#3b82f6" name="Temperature" />;
+    if (metric === "topP")
+      return <Line type="monotone" dataKey="topP" stroke="#10b981" name="Top P" />;
+    if (metric === "responseLength")
+      return (
+        <Line type="monotone" dataKey="responseLength" stroke="#f59e0b" name="Response Length" />
+      );
+    return (
+      <>
+        <Line type="monotone" dataKey="temperature" stroke="#3b82f6" name="Temperature" />
+        <Line type="monotone" dataKey="topP" stroke="#10b981" name="Top P" />
+        <Line type="monotone" dataKey="responseLength" stroke="#f59e0b" name="Response Length" />
+      </>
+    );
+  };
 
-      {/* Metrics Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: "Average Coherence", value: "0.87" },
-          { label: "Average Diversity", value: "0.69" },
-          { label: "Average Accuracy", value: "0.81" },
-        ].map((item, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white rounded-xl shadow-md p-4 border border-blue-100 text-center"
-          >
-            <p className="text-gray-600 text-sm">{item.label}</p>
-            <p className="text-2xl font-semibold text-blue-600">{item.value}</p>
-          </motion.div>
-        ))}
+  if (loading) return <p className="text-center text-blue-600">Loading metrics...</p>;
+  if (error) return <p className="text-center text-red-500">⚠️ {error}</p>;
+  if (!data.length) return <p className="text-center text-gray-500">No experiments yet.</p>;
+
+  return (
+    <div className="p-6 bg-white border border-blue-100 rounded-2xl shadow-lg">
+      <h2 className="text-2xl font-bold text-blue-600 mb-6 text-center">
+        Experiment Metrics Overview
+      </h2>
+
+      {/* 🧮 Summary Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <motion.div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-center shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-500">Average Temperature</h3>
+          <p className="text-2xl font-bold text-blue-600">{averages.avgTemp}</p>
+        </motion.div>
+        <motion.div className="p-4 bg-green-50 border border-green-100 rounded-xl text-center shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-500">Average Top P</h3>
+          <p className="text-2xl font-bold text-green-600">{averages.avgTopP}</p>
+        </motion.div>
+        <motion.div className="p-4 bg-yellow-50 border border-yellow-100 rounded-xl text-center shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-500">Avg. Response Length</h3>
+          <p className="text-2xl font-bold text-yellow-600">{averages.avgResponseLength}</p>
+        </motion.div>
       </div>
 
-      {/* Bar Chart */}
-      <Card className="rounded-xl border border-blue-100 shadow-md">
-        <CardContent className="p-4">
-          <h2 className="text-lg font-semibold text-blue-600 mb-3">Metric Comparison</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={metrics}>
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 1]} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="coherence" fill="#2563eb" />
-              <Bar dataKey="diversity" fill="#60a5fa" />
-              <Bar dataKey="accuracy" fill="#93c5fd" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* 📊 Filter */}
+      <div className="flex justify-end mb-4">
+        <select
+          value={metric}
+          onChange={(e) => setMetric(e.target.value as MetricType)}
+          className="border border-blue-200 rounded-lg px-3 py-2 text-sm text-gray-600 focus:ring focus:ring-blue-100"
+        >
+          <option value="all">All Metrics</option>
+          <option value="temperature">Temperature</option>
+          <option value="topP">Top P</option>
+          <option value="responseLength">Response Length</option>
+        </select>
+      </div>
 
-      {/* Line Chart */}
-      <Card className="rounded-xl border border-blue-100 shadow-md">
-        <CardContent className="p-4">
-          <h2 className="text-lg font-semibold text-blue-600 mb-3">Metric Trends Over Experiments</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={metrics}>
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 1]} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="coherence" stroke="#2563eb" strokeWidth={2} />
-              <Line type="monotone" dataKey="diversity" stroke="#60a5fa" strokeWidth={2} />
-              <Line type="monotone" dataKey="accuracy" stroke="#93c5fd" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* 📈 Line Chart */}
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="createdAt" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          {renderLines()}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }

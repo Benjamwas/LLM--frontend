@@ -8,13 +8,13 @@ import MetricsSlider from "@/components/MetricSliders";
 import ChatInput from "@/components/ChatInput";
 import ResponseSection from "@/components/ReponseSection";
 import ActionButtons from "@/components/ActionButtons";
-import metricsChart  from '@/components/MetricsChart'
+import MetricsChart from "@/components/MetricsChart"; // ✅ fixed import
 
 export default function HomePage() {
   const [prompt, setPrompt] = useState("");
   const [responses, setResponses] = useState<any[]>([]);
   const [newResponse, setNewResponse] = useState<any>(null);
-  
+
   useEffect(() => {
     const fetchResponses = async () => {
       try {
@@ -28,8 +28,7 @@ export default function HomePage() {
           createdAt: exp.createdAt,
         }));
         setResponses(formatted);
-      }
-      catch (err) {
+      } catch (err) {
         console.error(err);
       }
     };
@@ -50,31 +49,36 @@ export default function HomePage() {
 
       {/* Content */}
       <section className="flex-1 container mx-auto p-4 grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left Sidebar (Prompt cards) */}
+        {/* Left Sidebar */}
         <aside className="lg:col-span-2 space-y-4">
           <PromptCards onSelectPrompt={setPrompt} />
           <MetricsSlider />
           <ActionButtons />
         </aside>
 
-        {/* Right Side (Chat + Responses) */}
+        {/* Right Side */}
         <section className="lg:col-span-3 flex flex-col justify-between space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex-1 overflow-y-auto rounded-2xl p-4 bg-white shadow-sm border border-gray-200"
           >
-            {/* ResponseSection's props type does not currently include `responses`; suppressing TS error for now */}
+            {/* Responses */}
             {/* @ts-ignore */}
             <ResponseSection responses={responses} />
+
+            {/* ✅ Metrics Chart visualization */}
+            <div className="mt-6">
+              <MetricsChart responses={responses} />
+            </div>
           </motion.div>
 
-             <ChatInput
-          prompt={prompt}
-          setPrompt={setPrompt}
-          setResponses={setResponses}
-        />
-
+          {/* Chat Input */}
+          <ChatInput
+            prompt={prompt}
+            setPrompt={setPrompt}
+            setResponses={setResponses}
+          />
         </section>
       </section>
     </main>
