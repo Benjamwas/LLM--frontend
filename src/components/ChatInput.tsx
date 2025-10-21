@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { Send } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 interface ChatInputProps {
-  setResponses: (responses: any[]) => void;
+  prompt: string;
+  setPrompt: React.Dispatch<React.SetStateAction<string>>;
+  setResponses: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
-export default function ChatInput({ setResponses }: ChatInputProps) {
-  const [prompt, setPrompt] = useState("");
+export default function ChatInput({ prompt, setPrompt, setResponses }: ChatInputProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,8 +20,6 @@ export default function ChatInput({ setResponses }: ChatInputProps) {
     setError(null);
 
     try {
-      console.log("Sending prompt:", prompt); // 🔹 debug
-
       const res = await fetch("https://llm-qou7.onrender.com/api/generate-experiment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,7 +32,6 @@ export default function ChatInput({ setResponses }: ChatInputProps) {
       if (!res.ok) throw new Error("Failed to generate experiment");
 
       const data = await res.json();
-      console.log("Backend response:", data); // 🔹 debug
 
       const newExperiment = {
         id: data.id,
@@ -42,10 +40,10 @@ export default function ChatInput({ setResponses }: ChatInputProps) {
         createdAt: data.createdAt,
       };
 
-      // ✅ Prepend the new response to the existing array
+      //  Update parent responses
       setResponses((prev: any[]) => [newExperiment, ...(prev || [])]);
 
-      // Clear input
+      //  Clear input
       setPrompt("");
     } catch (err: any) {
       console.error("ChatInput error:", err);
