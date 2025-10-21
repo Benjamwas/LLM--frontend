@@ -53,7 +53,7 @@ interface ExperimentData {
   createdAt: string;
 }
 
-export default function MetricsChart(): JSX.Element {
+export default function MetricsChart() {
   const [data, setData] = useState<ExperimentData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);

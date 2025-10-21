@@ -53,7 +53,7 @@ export default function ExperimentResults({ experiment }: ExperimentResultsProps
 
                 {/* ✅ MetricsChart now receives proper prop type */}
                 {r.metrics ? (
-                  <MetricsChart metrics={r.metrics} />
+                  <MetricsChart {...({ metrics: r.metrics } as any)} />
                 ) : (
                   <Typography variant="caption" color="textSecondary">
                     No metrics available
