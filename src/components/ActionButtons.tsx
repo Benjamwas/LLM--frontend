@@ -6,7 +6,7 @@ import { Download, BarChart } from "lucide-react";
 
 export default function ActionButtons() {
   const handleExport = () => {
-    window.open("http://localhost:3000/api/export-all-experiments", "_blank");
+    window.open("https://llm-qou7.onrender.com/api/export-all-experiments", "_blank");
   };
 
   return (

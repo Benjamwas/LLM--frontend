@@ -71,7 +71,7 @@ export default function MetricsChart(): JSX.Element {
         setLoading(true);
         setError(null);
 
-        const res = await fetch("http://localhost:3000/api/experiments");
+        const res = await fetch("https://llm-qou7.onrender.com/api/experiments");
         if (!res.ok) throw new Error("Failed to fetch experiments");
         const experiments = (await res.json()) as ServerExperiment[];
 

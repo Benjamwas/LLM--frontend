@@ -18,7 +18,7 @@ export default function ResponseSection({ newResponse }: ResponseSectionProps) {
       setLoading(true);
       setError(null);
 
-      const res = await fetch("http://localhost:3000/api/experiments");
+      const res = await fetch("https://llm-qou7.onrender.com/api/experiments");
       if (!res.ok) throw new Error("Failed to fetch responses");
 
       const data = await res.json();

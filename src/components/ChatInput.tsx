@@ -21,7 +21,7 @@ export default function ChatInput({ setResponses }: ChatInputProps) {
     try {
       console.log("Sending prompt:", prompt); // 🔹 debug
 
-      const res = await fetch("http://localhost:3000/api/generate-experiment", {
+      const res = await fetch("https://llm-qou7.onrender.com/api/generate-experiment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
