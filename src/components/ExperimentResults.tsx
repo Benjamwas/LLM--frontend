@@ -6,6 +6,7 @@ import MetricProgress from "./MetricProgress";
 interface ExperimentResultsProps {
   experiment: {
     prompt: string;
+    metrics: any;
     results?: string; // stored as stringified JSON
   } | null;
 }
