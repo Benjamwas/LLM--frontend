@@ -69,7 +69,8 @@ export default function HomePage() {
 
             {/* ✅ Metrics Chart visualization */}
             <div className="mt-6">
-              <MetricsChart/>
+              {/* @ts-ignore */}
+              <MetricsChart responses={responses} />
             </div>
           </motion.div>
 

@@ -1,40 +1,95 @@
-// src/components/MetricsSlider.tsx
 "use client";
+import React, { useState } from "react";
+import { Box, TextField, Typography, Button } from "@mui/material";
 
-import { Slider } from "@mui/material";
-import { useState } from "react";
+interface MetricInputsProps {
+  parameters?: {
+    temperature?: number[];
+    topP?: number[];
+  };
+  setParameters?: React.Dispatch<
+    React.SetStateAction<{ temperature: number[]; topP: number[] }>
+  >;
+}
 
-export default function MetricsSlider() {
-  const [temperature, setTemperature] = useState(0.7);
-  const [topP, setTopP] = useState(0.9);
+export default function MetricInputs({
+  parameters = { temperature: [], topP: [] },
+  setParameters = () => {},
+}: MetricInputsProps) {
+  const [tempInput, setTempInput] = useState<string>("");
+  const [topPInput, setTopPInput] = useState<string>("");
+
+  // Convert comma-separated string to number array
+  const handleUpdateParameters = () => {
+    const temps = tempInput
+      .split(",")
+      .map((v) => parseFloat(v.trim()))
+      .filter((v) => !isNaN(v));
+
+    const tops = topPInput
+      .split(",")
+      .map((v) => parseFloat(v.trim()))
+      .filter((v) => !isNaN(v));
+
+    setParameters({
+      temperature: temps,
+      topP: tops,
+    });
+  };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-md border border-blue-100 space-y-4">
-      <h2 className="text-lg font-semibold text-blue-600">Set Metrics</h2>
+    <Box className="p-4 bg-white/5 rounded-xl shadow-md">
+      <Typography variant="h6" color="primary" gutterBottom>
+        Set Response Metrics
+      </Typography>
 
-      <div>
-        <label className="text-sm font-medium text-gray-700">Temperature: {temperature.toFixed(2)}</label>
-        <Slider
-          value={temperature}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={(_, value) => setTemperature(value as number)}
-          sx={{ color: "#1e90ff" }}
+      {/* Temperature input */}
+      <Box className="mt-4">
+        <Typography variant="subtitle2" gutterBottom>
+          🌡 Temperature values (comma-separated)
+        </Typography>
+        <TextField
+          fullWidth
+          placeholder="e.g. 0.5, 0.7, 0.9"
+          variant="outlined"
+          size="small"
+          value={tempInput}
+          onChange={(e) => setTempInput(e.target.value)}
         />
-      </div>
+      </Box>
 
-      <div>
-        <label className="text-sm font-medium text-gray-700">Top P: {topP.toFixed(2)}</label>
-        <Slider
-          value={topP}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={(_, value) => setTopP(value as number)}
-          sx={{ color: "#1e90ff" }}
+      {/* Top-P input */}
+      <Box className="mt-4">
+        <Typography variant="subtitle2" gutterBottom>
+          🎯 Top-P values (comma-separated)
+        </Typography>
+        <TextField
+          fullWidth
+          placeholder="e.g. 0.8, 0.9, 1.0"
+          variant="outlined"
+          size="small"
+          value={topPInput}
+          onChange={(e) => setTopPInput(e.target.value)}
         />
-      </div>
-    </div>
+      </Box>
+
+      {/* Update button */}
+      <Button
+        variant="contained"
+        color="primary"
+        className="mt-4"
+        onClick={handleUpdateParameters}
+      >
+        Apply Metrics
+      </Button>
+
+      {/* Show parsed arrays */}
+      {(parameters.temperature?.length ?? 0) > 0 && (
+        <Typography variant="caption" className="block mt-2">
+          ✅ Temp: {parameters.temperature?.join(", ") ?? ""} | Top-P:{" "}
+          {parameters.topP?.join(", ") ?? ""}
+        </Typography>
+      )}
+    </Box>
   );
 }
